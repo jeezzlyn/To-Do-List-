@@ -1,0 +1,527 @@
+from tkinter import *
+from openpyxl import Workbook, load_workbook
+from PIL import Image, ImageTk
+from datetime import datetime
+from tkinter import messagebox
+
+root = Tk()
+root.title("To-Do List")
+root.geometry("650x650")
+
+tasks = []
+streak = 0
+percentage = 0
+
+#Welcome page
+def start ():
+    welcome_frame.pack_forget()
+    main_frame.pack(fill = BOTH, expand = True)
+
+welcome_frame = Frame(root)
+welcome_frame.pack(fill = BOTH, expand = True)
+
+Char_img = Image.open(r"C:\Users\ASUS\.vscode\to-do-list\character.png")
+Char_img = Char_img.resize((150, 150))
+Char_photo = ImageTk.PhotoImage(Char_img)
+
+Label(
+    welcome_frame,
+    image = Char_photo
+).pack(pady = 20)
+
+Label(
+    welcome_frame,
+    text = "Welcome to the To-Do List App!", 
+    font = ("Helvetica", 20)
+).pack(pady = 20)
+
+streak_img = Image.open(r"C:\Users\ASUS\.vscode\to-do-list\streak.png")
+streak_img = streak_img.resize((50, 50))
+streak_photo = ImageTk.PhotoImage(streak_img)
+
+streak_frame = Frame(welcome_frame)
+streak_frame.pack(pady = 10)
+
+Label(
+    streak_frame,
+    image = streak_photo
+).pack(side = RIGHT, padx = 5)
+
+streak_label = Label(
+    streak_frame, 
+    text = f"Streak: {streak} days",
+    font = ("Helvetica", 14), 
+)
+streak_label.pack(side = LEFT)
+
+percentage_label = Label(
+    welcome_frame,
+    text = f"Completion Percentage: {percentage}%",
+    font = ("Helvetica", 14)
+)
+percentage_label.pack(pady = 10)
+
+Button(
+    welcome_frame, 
+    text = "Start", 
+    font = ("Helvetica", 16),
+    command = start
+).pack(pady = 20)
+
+#Main page
+main_frame = Frame(root)
+
+search_frame = Frame(main_frame)
+search_frame.pack(fill = X, pady = 10)
+
+Label(search_frame, text = "Search").pack(side = LEFT, padx = 10)
+
+search_entry = Entry(search_frame)
+search_entry.pack(side = LEFT, fill = X, expand = True, padx = 10)
+
+search_entry.bind(
+    "<Return>",
+    lambda event: search_tasks()
+)
+
+def refresh_tasks():
+    for widget in task_container.winfo_children():
+        widget.destroy()
+
+    for i, task in enumerate(tasks):
+
+        task_frame = Frame(task_container, relief = "solid", bd = 1)
+        task_frame.pack(fill = X, padx = 10, pady = 5)
+
+        task["frame"] = task_frame
+
+        delete_button = Button(
+            task_frame,
+            text = "❌",
+            command = lambda t=task: delete_task(t)
+        )
+
+        task["delete_button"] = delete_button
+
+        if delete_mode:
+            delete_button.pack(side = RIGHT, padx = 5)
+
+        done_var = BooleanVar(value = task["done"])
+
+        def mark_done(t=task, var = done_var):
+            t["done"] = var.get()
+            update_percentage()
+
+        Checkbutton(
+            task_frame,
+            variable = done_var,
+            command = mark_done
+        ).pack(side = LEFT, padx = 5)
+
+        Label(
+            task_frame,
+            text=f"{i+1}. Task: {task['task']}\n"
+                f"    Category: {task['category']}\n"
+                f"    Due Date: {task['date']}\n"
+                f"    Time: {task['time']}\n"
+                f"    Priority: {task['priority']}",
+            justify="left",
+            anchor="w"
+        ).pack(side=LEFT)
+
+def search_tasks():
+    keyword = search_entry.get().lower().strip()
+
+    if keyword == "":
+        refresh_tasks()
+        return
+    
+    for widget in task_container.winfo_children():
+        widget.destroy()
+    
+    result_number = 1
+
+    for task in tasks:
+
+        if(keyword in task["task"].lower() or
+            keyword in task["category"].lower()):
+            
+            result_frame = Frame(task_container, relief = "solid", bd = 1)
+            result_frame.pack(fill = X, padx = 10, pady = 5)
+
+            Label(result_frame,
+                text = f"{result_number}. Task: {task['task']}\n"
+                    f"      Category: {task['category']}\n"
+                    f"      Due Date: {task['date']}\n"
+                    f"      Time: {task['time']}\n"
+                    f"      Priority: {task['priority']}",
+                justify = "left",
+                anchor = "w"
+            ).pack(side = LEFT)
+
+            result_number += 1
+
+Button(search_frame,
+    text = "Search",
+    command = search_tasks
+).pack(side = LEFT, padx = 5)
+        
+Button(search_frame,
+    text = "Show All",
+    command = refresh_tasks
+).pack(side = LEFT, padx = 5)
+
+#Scroll
+canvas = Canvas(main_frame)
+scrollbar = Scrollbar(main_frame, orient = "vertical", command = canvas.yview)
+
+task_container = Frame(canvas)
+
+task_container.bind(
+    "<Configure>",
+    lambda e: canvas.configure(
+        scrollregion = canvas.bbox("all")
+    )
+)
+
+canvas.create_window((0, 0), window = task_container, anchor = "nw")
+canvas.configure(yscrollcommand = scrollbar.set)
+
+canvas.pack(side = LEFT, fill = BOTH, expand = True)
+scrollbar.pack(side = RIGHT, fill = Y)
+
+#Functions
+delete_mode = False
+
+def delete_task(task_data):
+    task_data["frame"].destroy()
+
+    if task_data in tasks:
+        tasks.remove(task_data)
+
+    refresh_tasks()
+    update_percentage()
+
+def toggle_delete():
+    global delete_mode
+
+    delete_mode = not delete_mode
+
+    for task in tasks:
+        if delete_mode:
+            task["delete_button"].pack(side = LEFT, padx = 5)
+
+#Bottom Buttons
+def go_back():
+    global streak
+
+    if len(tasks) > 0:
+        completed = 0
+
+        for task in tasks:
+            if task["done"]:
+                completed += 1
+        if completed == len(tasks):
+            streak += 1
+    streak_label.config(text = f"Streak: {streak} days")
+
+    update_percentage()
+
+    main_frame.pack_forget()
+    welcome_frame.pack(fill = BOTH, expand = True)
+
+def load_task():
+    global tasks
+
+    try:
+        wb = load_workbook("tasks.xlsx")
+        ws = wb.active
+
+        tasks.clear()
+
+        # Clear existing task widgets
+        for widget in task_container.winfo_children():
+            widget.destroy()
+
+        for row in ws.iter_rows(min_row = 2, values_only=True):
+
+            task = {
+                "task": row[0],
+                "category": row[1],
+                "date": row[2],
+                "time": row[3],
+                "priority": row[4],
+                "done": row[5]
+            }
+
+            tasks.append(task)
+
+            task_number = len(tasks)
+            task_index = len(tasks) - 1
+
+            task_frame = Frame(task_container, relief="solid", bd=1)
+            task_frame.pack(fill = X, padx = 10, pady = 5)
+            
+            tasks[task_index]["frame"] = task_frame
+
+            delete_button = Button(
+                    task_frame,
+                    text = "❌",
+                    command = lambda t=task: delete_task(t)
+            )
+
+            tasks[task_index]["delete_button"] = delete_button
+
+            done_var = BooleanVar(value =  task["done"])
+
+            def mark_done (index = task_index, var = done_var):
+                tasks[index]["done"] = var.get()
+                update_percentage()
+
+            Checkbutton(
+                task_frame,
+                variable = done_var,
+                command = mark_done
+            ).pack(side = LEFT, padx = 5)
+
+            Label(
+                task_frame,
+                text = f"{task_number}. Task: {task['task']}\n"
+                    f"      Category: {task['category']}\n"
+                    f"      Due Date: {task['date']}\n"
+                    f"      Time: {task['time']}\n"
+                    f"      Priority: {task['priority']}",
+                justify = "left",
+                anchor = "w"
+            ).pack(side=LEFT)
+
+        update_percentage()
+
+    except FileNotFoundError:
+        print("No saved file found.")
+
+def save_task():
+    wb = Workbook()
+    ws = wb.active
+
+    ws.append([
+        "Task",
+        "Category",
+        "Date",
+        "Time",
+        "Priority",
+        "Done"
+    ])
+
+    for task in tasks:
+        ws.append([
+            task["task"],
+            task["category"],
+            task["date"],
+            task["time"],
+            task["priority"],
+            task["done"]
+        ])
+
+    wb.save("tasks.xlsx")
+
+button_frame = Frame(main_frame)
+button_frame.pack(fill = X, pady = 10)
+
+delete_button = Button(button_frame, 
+    text = "Delete",
+    command = toggle_delete
+).pack(side = LEFT, padx = 10)
+
+save_button = Button(button_frame, 
+    text = "Save",
+    command = save_task
+).pack(side = LEFT, padx = 10)
+
+load_button = Button(button_frame, 
+    text = "Load",
+    command = load_task
+).pack(side = LEFT, padx = 10)   
+
+back_button = Button(button_frame,
+    text = "Back",
+    command = go_back
+).pack(side = LEFT, padx = 10)
+
+def update_percentage():
+    global percentage
+
+    if len(tasks) == 0:
+        percentage = 0
+    else: 
+        completed = 0
+
+        for task in tasks:
+            if task["done"]:
+                completed += 1
+        percentage = int((completed/len(tasks))*100)
+    percentage_label.config(
+        text = f"Completition Percentage: {percentage} %"
+    )
+
+#popups
+add_window = None
+
+def open_add_task():
+    global add_window
+
+    if add_window is not None and add_window.winfo_exists():
+        add_window.lift()
+        add_window.focus_force()
+        return
+
+    add_window = Toplevel(root)
+    add_window.title("Add Task")
+    add_window.geometry("400x600")
+
+    def close_add_window():
+        global add_window
+        add_window.destroy()
+        add_window = None
+    
+    add_window.protocol("WM_DELETE_WINDOW", close_add_window)
+
+    Label(add_window,
+        text = "Task Name: ",
+        font = ("Helvetica", 14)
+    ).pack(pady = 10)
+    
+    task_entry = Entry(add_window)
+    task_entry.pack()
+
+    Label(add_window,
+        text = "Category: ",
+        font = ("Helvetica", 14)
+    ).pack(pady = 10)
+
+    category_entry = Entry(add_window)
+    category_entry.pack()
+
+    Label(add_window,
+        text = "Due Date: ",
+        font = ("Helvetica", 14)
+    ).pack(pady = 10)
+
+    date_entry = Entry(add_window)
+    date_entry.pack()
+
+    Label(add_window,
+        text = "Time: ",
+        font = ("Helvetica", 14)
+    ).pack(pady = 10)
+
+    time_entry = Entry(add_window)
+    time_entry.pack()
+
+    Label(add_window,
+        text = "Priority: ",
+        font = ("Helvetica", 14)
+    ).pack(pady = 10)
+
+    priority_var = StringVar(value = "Medium")
+
+    Radiobutton(
+        add_window,
+        text = "High",
+        variable = priority_var,
+        value = "High"
+    ).pack()
+
+    Radiobutton(
+        add_window,
+        text = "Medium",
+        variable = priority_var,
+        value = "Medium",
+    ).pack()
+
+    Radiobutton(
+        add_window,
+        text = "Low",
+        variable = priority_var,
+        value = "Low"
+    ).pack()
+    
+    def add_task():
+        task = task_entry.get()
+        category = category_entry.get()
+        date = date_entry.get()
+        time = time_entry.get()
+        priority = priority_var.get()
+
+        try:
+            datetime.strptime(date, "%m-%d-%Y")
+        except ValueError:
+            messagebox.showerror(
+                "Invalid Date",
+                "PLease enter date as MM-DD-YYYY"
+            )
+            return
+        
+        try:
+            datetime.strptime(time, "%H:%M")
+        except ValueError:
+            messagebox.showerror(
+                "Invalid Time",
+                "Please enter time as HH:MM"
+            )
+            return
+        
+        task_datetime = datetime.strptime(
+            f"{date} {time}",
+            "%m-%d-%Y %H:%M"
+        )
+
+        if task_datetime <= datetime.now():
+            messagebox.showerror(
+                "Expired Task",
+                "This date and time have already passed."
+            )
+            return
+        
+        tasks.append({
+                "task": task,
+                "category": category,
+                "date": date,
+                "time": time,
+                "priority": priority,
+                "done": False,
+            })
+
+        refresh_tasks()
+        update_percentage()
+
+        close_add_window()
+
+    Button(
+        add_window,
+        text = "Add Task",
+        command = add_task
+    ).pack(pady=10)
+
+plus_img = Image.open(r"C:\Users\ASUS\.vscode\to-do-list\plus.png")
+plus_img = plus_img.resize((50, 50))
+plus_photo = ImageTk.PhotoImage(plus_img)
+
+plus_button = Button(
+        main_frame, 
+        image = plus_photo,
+        width = 50,
+        height = 50,
+        command = open_add_task
+)
+
+plus_button.place(relx = 0.9, rely = 0.9, anchor = "se")
+
+completed = 0
+
+for task in tasks:
+    if task["done"]:
+        completed += 1
+
+root.mainloop()
+
