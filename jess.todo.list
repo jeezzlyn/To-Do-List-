@@ -1621,24 +1621,24 @@ def update_buddy():
         )
 
     if total == 0:
-        buddy_label.config(image=char_photo)
+        buddy_label.config(image = char_photo)
         speech_label.config(
             text="Let's plan today's tasks! 🌱"
         )
 
     elif completed == 0:
-        buddy_label.config(image=bello_photo)
+        buddy_label.config(image = bello_photo)
         speech_label.config(
             text="Ready to start? 💪"
         )
 
     elif completed < total:
-        buddy_label.config(image=happy_photo)
+        buddy_label.config(image = happy_photo)
 
         show_task_message()
 
     else:
-        buddy_label.config(image=happy_photo)
+        buddy_label.config(image = happy_photo)
         speech_label.config(
             text="YOU DID IT!! 🎉"
         )
@@ -1657,7 +1657,7 @@ def show_task_message():
     if 0 < completed < total:
 
         speech_label.config(
-            text=f"Only {total-completed} task(s) left! ⭐"
+            text = f"Only {total-completed} task(s) left! ⭐"
         )
 
         motivation_job = root.after(
