@@ -1651,8 +1651,8 @@ def user_activity(event = None):
 
     last_activity = datetime.now()
 
-    root.bind_all("<Key>", user_activity)
-    root.bind_all("<Button-1>", user_activity)
+root.bind_all("<Key>", user_activity)
+root.bind_all("<Button-1>", user_activity)
 
 def check_idle():
 
