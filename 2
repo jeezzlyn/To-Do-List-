@@ -34,7 +34,7 @@ over_img = over_img.resize((65,65))
 over_photo = ImageTk.PhotoImage(over_img)
 
 worried_img = Image.open(r"C:\Users\ASUS\.vscode\to-do-list\scared.png")
-worried_img = worried_img.resize((140,140))
+worried_img = worried_img.resize((65,65))
 worried_photo = ImageTk.PhotoImage(worried_img)
 
 sirine_img = Image.open(r"C:\Users\ASUS\.vscode\to-do-list\sirine.png")
@@ -601,9 +601,9 @@ overdue_speech = Label(
     overdue_buddy_frame,
     text="No overdue tasks! 🎉",
     font=("Helvetica",10),
-    padx=8,
-    pady=6,
-    wraplength=100,
+    padx=15,
+    pady=10,
+    wraplength=180,
     relief="ridge",
     bd=2
 )
@@ -695,17 +695,11 @@ def update_overdue():
         ).pack(fill=X, padx=5, pady=4)
 
     if overdue:
-
-        overdue_buddy.config(image = over_photo)
-
         overdue_speech.config(
             text=f"Oh no!\n{len(overdue)} overdue task(s)! 😥"
         )
 
     else:
-
-        overdue_buddy.config(image = over_photo)
-
         overdue_speech.config(
             text="Yuhu!\nNo overdue tasks! 🎉"
         )
@@ -798,8 +792,8 @@ small_speech_label = Label(
     smallbud_frame,
     text="Let's get started! 🌱",
     font=("Helvetica",10),
-    padx=8,
-    pady=6,
+    padx=15,
+    pady=10,
     wraplength=100,
     relief="ridge",
     bd=2
