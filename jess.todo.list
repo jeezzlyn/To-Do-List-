@@ -651,11 +651,13 @@ def update_overdue():
     for widget in overdue_list_frame.winfo_children():
         widget.destroy()
 
-    if overdue:
-        overdue_frame.pack(fill=X, padx=10, pady=10)
-    else:
-        overdue_frame.pack_forget()
-        return
+    if not overdue_frame.winfo_ismapped():
+        overdue_frame.pack(
+            before=quote_frame,
+            fill=X,
+            padx=10,
+            pady=10
+        )
 
     if dark_mode:
             bg_colour = "#565656"
@@ -1649,16 +1651,14 @@ def user_activity(event = None):
 
     last_activity = datetime.now()
 
-    update_buddy()
-
-root.bind_all("<Button-1>", user_activity)
-root.bind_all("<Key>", user_activity)
+    root.bind_all("<Key>", user_activity)
+    root.bind_all("<Button-1>", user_activity)
 
 def check_idle():
 
     update_buddy()
 
-    root.after(10000, check_idle)
+    root.after(1000, check_idle)
 
 floating = True
 
