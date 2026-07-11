@@ -1564,7 +1564,8 @@ def show_motivation():
 
     if 0 < completed < total:
         speech_label.config(text=random.choice(motivation))
-        motivation_job = root.after(4000, update_buddy)
+
+    motivation_job = None
 
 speech_label = Label(
     buddy_frame,
@@ -1587,10 +1588,13 @@ buddy_label.pack()
 def update_buddy():
     global motivation_job
 
-    if motivation_job:
-        root.after_cancel(motivation_job)
-        motivation_job = None
+    idle_seconds = (datetime.now() - last_activity).total_seconds()
 
+    if idle_seconds > 60:
+        buddy_label.config(image=sleep_photo)
+        speech_label.config(text="Zzz... 😴")
+        return
+    
     completed = sum(task["done"] for task in tasks)
     total = len(tasks)
 
@@ -1606,29 +1610,41 @@ def update_buddy():
         )
 
     if total == 0:
+        if motivation_job is not None:
+            root.after_cancel(motivation_job)
+            motivation_job = None
+
         buddy_label.config(image = char_photo)
         speech_label.config(text = "Let's plan today's tasks! 🌱")
 
     elif completed == 0:
+        if motivation_job is not None:
+            root.after_cancel(motivation_job)
+            motivation_job = None
+
         buddy_label.config(image = bello_photo)
         speech_label.config(text = "Ready to start? 💪")
 
     elif completed < total:
         buddy_label.config(image = happy_photo)
-        speech_label.config(
-            text = f"Only {total-completed} task(s) left! ⭐"
-        )
 
-        # Show motivation after 4 seconds
-        motivation_job = root.after(4000, show_motivation)
+        if motivation_job is None:
+            speech_label.config(
+                text=f"Only {total-completed} task(s) left! ⭐"
+            )
+            motivation_job = root.after(4000, show_motivation)
 
     else:
+        if motivation_job is not None:
+            root.after_cancel(motivation_job)
+            motivation_job = None
+
         buddy_label.config(image = happy_photo)
         speech_label.config(text = "YOU DID IT!! 🎉")
 
 last_activity = datetime.now()
 
-def user_activity(event=None):
+def user_activity(event = None):
     global last_activity
 
     last_activity = datetime.now()
@@ -1639,25 +1655,14 @@ root.bind_all("<Button-1>", user_activity)
 root.bind_all("<Key>", user_activity)
 
 def check_idle():
-    idle_seconds = (
-        datetime.now() - last_activity
-    ).total_seconds()
 
-    if idle_seconds > 60:
-        buddy_label.config(image = sleep_photo)
+    update_buddy()
 
-        speech_label.config(
-            text="Zzz... 😴"
-        )
-
-    root.after(1000, check_idle)
-
-check_idle()
+    root.after(10000, check_idle)
 
 floating = True
 
 def float_buddy():
-
     global floating
 
     if floating:
@@ -1682,6 +1687,7 @@ update_clock()
 load_task()       
 update_streak()
 
+check_idle()
 check_reminders()
 
 root.mainloop()
